@@ -43,7 +43,7 @@ const Register = () => {
       sessionStorage.setItem("firstname", result.firstName || "");
       sessionStorage.setItem("lastname", result.lastName || "");
       window.location.assign("/dealers/");
-    } catch (error) {
+    } catch {
       setMessage("The registration service is unavailable.");
     } finally {
       setSubmitting(false);
