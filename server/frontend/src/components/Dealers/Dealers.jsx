@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import Header from "../Header/Header";
 import reviewIcon from "../assets/reviewicon.png";
@@ -7,16 +7,12 @@ import "./Dealers.css";
 
 const Dealers = () => {
   const [dealers, setDealers] = useState([]);
+  const [allStates, setAllStates] = useState([]);
   const [selectedState, setSelectedState] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const isLoggedIn = Boolean(sessionStorage.getItem("username"));
-
-  const states = useMemo(
-    () => [...new Set(dealers.map((dealer) => dealer.state))].sort(),
-    [dealers],
-  );
 
   const loadDealers = async (state = "All") => {
     setLoading(true);
@@ -34,7 +30,14 @@ const Dealers = () => {
         throw new Error(result.message || "Unable to load dealerships.");
       }
 
-      setDealers(Array.isArray(result.dealers) ? result.dealers : []);
+      const dealerList = Array.isArray(result.dealers) ? result.dealers : [];
+      setDealers(dealerList);
+
+      if (state === "All") {
+        setAllStates(
+          [...new Set(dealerList.map((dealer) => dealer.state))].sort(),
+        );
+      }
     } catch (requestError) {
       setDealers([]);
       setError(requestError.message || "Unable to load dealerships.");
@@ -68,7 +71,7 @@ const Dealers = () => {
             <span>Filter by state</span>
             <select value={selectedState} onChange={changeState}>
               <option value="All">All states</option>
-              {states.map((state) => (
+              {allStates.map((state) => (
                 <option value={state} key={state}>{state}</option>
               ))}
             </select>
