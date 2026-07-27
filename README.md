@@ -1,5 +1,10 @@
 # Best Cars — Full Stack Application Development Capstone
 
+## Project details
+
+- **Repository name:** `xrwvm-fullstack_developer_capstone`
+- **Project name:** `Best Cars — Full Stack Application Development Capstone`
+
 A full-stack dealership review platform built for the IBM Full Stack Application Development Capstone Project. Visitors can browse dealerships by state and read reviews. Registered users can sign in, publish purchase reviews, and see sentiment analysis attached to customer feedback.
 
 ## Architecture
