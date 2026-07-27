@@ -20,6 +20,8 @@ const loadJson = (filename) => {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 };
 
+const escapeRegularExpression = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const seedDatabase = async () => {
   const reviewsData = loadJson('reviews.json').reviews;
   const dealershipsData = loadJson('dealerships.json').dealerships;
@@ -67,8 +69,10 @@ app.get('/fetchDealers', async (req, res) => {
 
 app.get('/fetchDealers/:state', async (req, res) => {
   try {
-    const state = req.params.state;
-    const query = state.toLowerCase() === 'all' ? {} : { state: state.toUpperCase() };
+    const state = req.params.state.trim();
+    const query = state.toLowerCase() === 'all'
+      ? {}
+      : { state: new RegExp(`^${escapeRegularExpression(state)}$`, 'i') };
     const dealers = await Dealerships.find(query).sort({ id: 1 });
     res.json(dealers);
   } catch (error) {
