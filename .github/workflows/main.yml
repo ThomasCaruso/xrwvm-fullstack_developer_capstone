@@ -61,7 +61,7 @@ jobs:
 
       - name: Install React dependencies
         working-directory: server/frontend
-        run: npm ci
+        run: npm install
 
       - name: Build React application
         working-directory: server/frontend
