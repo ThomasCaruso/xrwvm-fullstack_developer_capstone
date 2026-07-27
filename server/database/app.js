@@ -20,29 +20,42 @@ const loadJson = (filename) => {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 };
 
+const initialReviews = loadJson('reviews.json').reviews;
+const initialDealerships = loadJson('dealerships.json').dealerships;
+let memoryReviews = initialReviews.map((review) => ({ ...review }));
+let memoryDealerships = initialDealerships.map((dealer) => ({ ...dealer }));
+let mongoAvailable = false;
+
 const escapeRegularExpression = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const seedDatabase = async () => {
-  const reviewsData = loadJson('reviews.json').reviews;
-  const dealershipsData = loadJson('dealerships.json').dealerships;
-
   if ((await Reviews.countDocuments()) === 0) {
-    await Reviews.insertMany(reviewsData);
+    await Reviews.insertMany(initialReviews);
   }
 
   if ((await Dealerships.countDocuments()) === 0) {
-    await Dealerships.insertMany(dealershipsData);
+    await Dealerships.insertMany(initialDealerships);
   }
 };
 
+const normalizeDocument = (document) => {
+  if (!document) return document;
+  return typeof document.toObject === 'function' ? document.toObject() : document;
+};
+
 app.get('/', (req, res) => {
-  res.json({ message: 'Dealership reviews API is running' });
+  res.json({
+    message: 'Dealership reviews API is running',
+    storage: mongoAvailable ? 'mongodb' : 'in-memory JSON fallback',
+  });
 });
 
 app.get('/fetchReviews', async (req, res) => {
   try {
-    const reviews = await Reviews.find().sort({ id: 1 });
-    res.json(reviews);
+    const reviews = mongoAvailable
+      ? await Reviews.find().sort({ id: 1 })
+      : [...memoryReviews].sort((left, right) => left.id - right.id);
+    res.json(reviews.map(normalizeDocument));
   } catch (error) {
     res.status(500).json({ error: 'Error fetching reviews' });
   }
@@ -51,8 +64,12 @@ app.get('/fetchReviews', async (req, res) => {
 app.get('/fetchReviews/dealer/:id', async (req, res) => {
   try {
     const dealerId = Number(req.params.id);
-    const reviews = await Reviews.find({ dealership: dealerId }).sort({ id: -1 });
-    res.json(reviews);
+    const reviews = mongoAvailable
+      ? await Reviews.find({ dealership: dealerId }).sort({ id: -1 })
+      : memoryReviews
+          .filter((review) => Number(review.dealership) === dealerId)
+          .sort((left, right) => right.id - left.id);
+    res.json(reviews.map(normalizeDocument));
   } catch (error) {
     res.status(500).json({ error: 'Error fetching dealer reviews' });
   }
@@ -60,8 +77,10 @@ app.get('/fetchReviews/dealer/:id', async (req, res) => {
 
 app.get('/fetchDealers', async (req, res) => {
   try {
-    const dealers = await Dealerships.find().sort({ id: 1 });
-    res.json(dealers);
+    const dealers = mongoAvailable
+      ? await Dealerships.find().sort({ id: 1 })
+      : [...memoryDealerships].sort((left, right) => left.id - right.id);
+    res.json(dealers.map(normalizeDocument));
   } catch (error) {
     res.status(500).json({ error: 'Error fetching dealerships' });
   }
@@ -70,11 +89,30 @@ app.get('/fetchDealers', async (req, res) => {
 app.get('/fetchDealers/:state', async (req, res) => {
   try {
     const state = req.params.state.trim();
-    const query = state.toLowerCase() === 'all'
-      ? {}
-      : { state: new RegExp(`^${escapeRegularExpression(state)}$`, 'i') };
-    const dealers = await Dealerships.find(query).sort({ id: 1 });
-    res.json(dealers);
+    let dealers;
+
+    if (mongoAvailable) {
+      const query = state.toLowerCase() === 'all'
+        ? {}
+        : {
+            $or: [
+              { state: new RegExp(`^${escapeRegularExpression(state)}$`, 'i') },
+              { st: new RegExp(`^${escapeRegularExpression(state)}$`, 'i') },
+            ],
+          };
+      dealers = await Dealerships.find(query).sort({ id: 1 });
+    } else {
+      const normalizedState = state.toLowerCase();
+      dealers = memoryDealerships
+        .filter((dealer) => {
+          if (normalizedState === 'all') return true;
+          return String(dealer.state || '').toLowerCase() === normalizedState
+            || String(dealer.st || '').toLowerCase() === normalizedState;
+        })
+        .sort((left, right) => left.id - right.id);
+    }
+
+    res.json(dealers.map(normalizeDocument));
   } catch (error) {
     res.status(500).json({ error: 'Error fetching dealerships by state' });
   }
@@ -83,13 +121,15 @@ app.get('/fetchDealers/:state', async (req, res) => {
 app.get('/fetchDealer/:id', async (req, res) => {
   try {
     const dealerId = Number(req.params.id);
-    const dealer = await Dealerships.findOne({ id: dealerId });
+    const dealer = mongoAvailable
+      ? await Dealerships.findOne({ id: dealerId })
+      : memoryDealerships.find((item) => Number(item.id) === dealerId);
 
     if (!dealer) {
       return res.status(404).json({ error: 'Dealership not found' });
     }
 
-    return res.json([dealer]);
+    return res.json([normalizeDocument(dealer)]);
   } catch (error) {
     return res.status(500).json({ error: 'Error fetching dealership' });
   }
@@ -97,10 +137,12 @@ app.get('/fetchDealer/:id', async (req, res) => {
 
 app.post('/insert_review', async (req, res) => {
   try {
-    const latestReview = await Reviews.findOne().sort({ id: -1 });
-    const newId = latestReview ? latestReview.id + 1 : 1;
+    const latestReview = mongoAvailable
+      ? await Reviews.findOne().sort({ id: -1 })
+      : [...memoryReviews].sort((left, right) => right.id - left.id)[0];
+    const newId = latestReview ? Number(latestReview.id) + 1 : 1;
 
-    const review = new Reviews({
+    const reviewData = {
       id: newId,
       name: req.body.name,
       dealership: Number(req.body.dealership),
@@ -110,10 +152,15 @@ app.post('/insert_review', async (req, res) => {
       car_make: req.body.car_make,
       car_model: req.body.car_model,
       car_year: Number(req.body.car_year),
-    });
+    };
 
-    const savedReview = await review.save();
-    return res.status(201).json(savedReview);
+    if (mongoAvailable) {
+      const savedReview = await new Reviews(reviewData).save();
+      return res.status(201).json(normalizeDocument(savedReview));
+    }
+
+    memoryReviews.push(reviewData);
+    return res.status(201).json(reviewData);
   } catch (error) {
     return res.status(400).json({ error: 'Error inserting review', details: error.message });
   }
@@ -121,15 +168,18 @@ app.post('/insert_review', async (req, res) => {
 
 const startServer = async () => {
   try {
-    await mongoose.connect(mongoUrl);
+    await mongoose.connect(mongoUrl, { serverSelectionTimeoutMS: 3000 });
     await seedDatabase();
-    app.listen(port, () => {
-      console.log(`Dealership API is running on port ${port}`);
-    });
+    mongoAvailable = true;
+    console.log('Connected to MongoDB.');
   } catch (error) {
-    console.error('Unable to start the dealership API:', error);
-    process.exit(1);
+    mongoAvailable = false;
+    console.warn('MongoDB is unavailable; using the bundled JSON data in memory.');
   }
+
+  app.listen(port, () => {
+    console.log(`Dealership API is running on port ${port}`);
+  });
 };
 
 startServer();
