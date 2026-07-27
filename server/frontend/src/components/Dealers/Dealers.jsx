@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import Header from "../Header/Header";
 import reviewIcon from "../assets/reviewicon.png";
@@ -14,7 +14,7 @@ const Dealers = () => {
 
   const isLoggedIn = Boolean(sessionStorage.getItem("username"));
 
-  const loadDealers = async (state = "All") => {
+  const loadDealers = useCallback(async (state = "All") => {
     setLoading(true);
     setError("");
 
@@ -44,11 +44,11 @@ const Dealers = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadDealers();
-  }, []);
+  }, [loadDealers]);
 
   const changeState = (event) => {
     const state = event.target.value;
