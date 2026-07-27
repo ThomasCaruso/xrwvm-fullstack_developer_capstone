@@ -1,96 +1,137 @@
-import React, { useState, useEffect } from 'react';
-import "./Dealers.css";
+import React, { useCallback, useEffect, useState } from "react";
+
+import Header from "../Header/Header";
+import reviewIcon from "../assets/reviewicon.png";
 import "../assets/style.css";
-import Header from '../Header/Header';
-import review_icon from "../assets/reviewicon.png"
+import "./Dealers.css";
 
 const Dealers = () => {
-  const [dealersList, setDealersList] = useState([]);
-  // let [state, setState] = useState("")
-  let [states, setStates] = useState([])
+  const [dealers, setDealers] = useState([]);
+  const [allStates, setAllStates] = useState([]);
+  const [selectedState, setSelectedState] = useState("All");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // let root_url = window.location.origin
-  let dealer_url ="/djangoapp/get_dealers";
-  
-  let dealer_url_by_state = "/djangoapp/get_dealers/";
- 
-  const filterDealers = async (state) => {
-    dealer_url_by_state = dealer_url_by_state+state;
-    const res = await fetch(dealer_url_by_state, {
-      method: "GET"
-    });
-    const retobj = await res.json();
-    if(retobj.status === 200) {
-      let state_dealers = Array.from(retobj.dealers)
-      setDealersList(state_dealers)
-    }
-  }
+  const isLoggedIn = Boolean(sessionStorage.getItem("username"));
 
-  const get_dealers = async ()=>{
-    const res = await fetch(dealer_url, {
-      method: "GET"
-    });
-    const retobj = await res.json();
-    if(retobj.status === 200) {
-      let all_dealers = Array.from(retobj.dealers)
-      let states = [];
-      all_dealers.forEach((dealer)=>{
-        states.push(dealer.state)
-      });
+  const loadDealers = useCallback(async (state = "All") => {
+    setLoading(true);
+    setError("");
 
-      setStates(Array.from(new Set(states)))
-      setDealersList(all_dealers)
-    }
-  }
-  useEffect(() => {
-    get_dealers();
-  },[]);  
+    const endpoint = state === "All"
+      ? "/djangoapp/get_dealers"
+      : `/djangoapp/get_dealers/${encodeURIComponent(state)}`;
 
+    try {
+      const response = await fetch(endpoint);
+      const result = await response.json();
 
-let isLoggedIn = sessionStorage.getItem("username") != null ? true : false;
-return(
-  <div>
-      <Header/>
-
-     <table className='table'>
-      <tr>
-      <th>ID</th>
-      <th>Dealer Name</th>
-      <th>City</th>
-      <th>Address</th>
-      <th>Zip</th>
-      <th>
-      <select name="state" id="state" onChange={(e) => filterDealers(e.target.value)}>
-      <option value="" selected disabled hidden>State</option>
-      <option value="All">All States</option>
-      {states.map(state => (
-          <option value={state}>{state}</option>
-      ))}
-      </select>        
-
-      </th>
-      {isLoggedIn ? (
-          <th>Review Dealer</th>
-         ):<></>
+      if (!response.ok || result.status !== 200) {
+        throw new Error(result.message || "Unable to load dealerships.");
       }
-      </tr>
-     {dealersList.map(dealer => (
-        <tr>
-          <td>{dealer['id']}</td>
-          <td><a href={'/dealer/'+dealer['id']}>{dealer['full_name']}</a></td>
-          <td>{dealer['city']}</td>
-          <td>{dealer['address']}</td>
-          <td>{dealer['zip']}</td>
-          <td>{dealer['state']}</td>
-          {isLoggedIn ? (
-            <td><a href={`/postreview/${dealer['id']}`}><img src={review_icon} className="review_icon" alt="Post Review"/></a></td>
-           ):<></>
-          }
-        </tr>
-      ))}
-     </table>;
-  </div>
-)
-}
 
-export default Dealers
+      const dealerList = Array.isArray(result.dealers) ? result.dealers : [];
+      setDealers(dealerList);
+
+      if (state === "All") {
+        setAllStates(
+          [...new Set(dealerList.map((dealer) => dealer.state))].sort(),
+        );
+      }
+    } catch (requestError) {
+      setDealers([]);
+      setError(requestError.message || "Unable to load dealerships.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDealers();
+  }, [loadDealers]);
+
+  const changeState = (event) => {
+    const state = event.target.value;
+    setSelectedState(state);
+    loadDealers(state);
+  };
+
+  return (
+    <div>
+      <Header />
+      <main className="page-shell">
+        <div className="page-heading dealer-heading">
+          <div>
+            <p className="section-label">Nationwide network</p>
+            <h1>Find a dealership</h1>
+            <p>Browse locations, filter by state, and read verified customer reviews.</p>
+          </div>
+
+          <label className="state-filter">
+            <span>Filter by state</span>
+            <select value={selectedState} onChange={changeState}>
+              <option value="All">All states</option>
+              {allStates.map((state) => (
+                <option value={state} key={state}>{state}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {loading && <div className="status-panel">Loading dealerships...</div>}
+        {!loading && error && <div className="status-panel error">{error}</div>}
+
+        {!loading && !error && (
+          <div className="dealer-table-wrap">
+            <table className="dealer-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Dealership</th>
+                  <th>City</th>
+                  <th>Address</th>
+                  <th>ZIP</th>
+                  <th>State</th>
+                  {isLoggedIn && <th aria-label="Post a review">Review</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {dealers.map((dealer) => (
+                  <tr key={dealer.id}>
+                    <td>{dealer.id}</td>
+                    <td>
+                      <a className="dealer-link" href={`/dealer/${dealer.id}/`}>
+                        {dealer.full_name}
+                      </a>
+                    </td>
+                    <td>{dealer.city}</td>
+                    <td>{dealer.address}</td>
+                    <td>{dealer.zip}</td>
+                    <td><span className="state-badge">{dealer.state}</span></td>
+                    {isLoggedIn && (
+                      <td>
+                        <a
+                          className="review-link"
+                          href={`/postreview/${dealer.id}/`}
+                          aria-label={`Review ${dealer.full_name}`}
+                        >
+                          <img src={reviewIcon} alt="" />
+                        </a>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {dealers.length === 0 && (
+              <div className="empty-table">No dealerships were found for this state.</div>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default Dealers;

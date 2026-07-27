@@ -1,17 +1,18 @@
 {
-  "name": "database",
+  "name": "dealership-reviews-api",
   "version": "1.0.0",
-  "description": "",
+  "description": "Express and MongoDB microservice for dealerships and reviews",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js",
+    "check": "node --check app.js && node --check dealership.js && node --check review.js"
   },
-  "author": "",
-  "license": "ISC",
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
-    "cors": "^2.8.5",    
+    "cors": "^2.8.5",
     "express": "^4.18.2",
-    "mongodb": "^6.3.0",
     "mongoose": "^8.0.1"
   }
 }

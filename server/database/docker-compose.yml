@@ -1,23 +1,32 @@
-version: '3.9'
-
 services:
-  # Mongodb service
   mongo_db:
-    container_name: db_container
-    image: mongo:latest
+    image: mongo:7
+    container_name: dealership-mongodb
+    restart: unless-stopped
     ports:
-      - 27017:27017
-    restart: always
+      - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
-  # Node api service
   api:
-    image: nodeapp
+    build:
+      context: .
+    image: dealership-reviews-api:latest
+    container_name: dealership-reviews-api
+    restart: unless-stopped
+    environment:
+      MONGODB_URL: mongodb://mongo_db:27017/dealershipsDB
+      PORT: 3030
     ports:
-      - 3030:3030
-    depends_on: 
-      - mongo_db
+      - "3030:3030"
+    depends_on:
+      mongo_db:
+        condition: service_healthy
 
 volumes:
-  mongo_data: {}
+  mongo_data:

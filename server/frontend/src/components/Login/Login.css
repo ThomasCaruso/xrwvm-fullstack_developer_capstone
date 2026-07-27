@@ -1,86 +1,111 @@
-.navcontainer{
-  display: flex;
-  flex: 1;
-
-  flex-direction: row;
-  margin: auto;
-  margin-top: 2%;
-  background-color: rgb(97, 64, 128);
-  align-items: flex-start;
+.login-page {
+  min-height: 100vh;
+  background: #f4f7fb;
+  color: #162033;
 }
 
-.navitems{
-  display: flex;
-  flex-direction: row;
-  padding: 20px;
-  flex: 1;
-  justify-content: flex-start;
-  justify-self: center;
+.login-card {
+  width: min(840px, calc(100% - 32px));
+  margin: 64px auto;
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(20, 35, 60, 0.12);
 }
 
-.nav_item{
-  margin-left:15px;
-  font-size: 20px;
-  color: azure;
-  align-self: center;
+.login-copy {
+  padding: 52px 42px;
+  background: linear-gradient(145deg, #082f49, #0e7490);
+  color: #ffffff;
 }
 
-.input_panel {
-  display: flex;
-  flex-direction: row;
-  padding: 20px;
-  flex: 1;
-  justify-content: flex-end;
-  justify-self: center;
+.login-copy h1 {
+  margin: 8px 0 16px;
+  font-size: clamp(2rem, 4vw, 3.25rem);
 }
 
-.input_field{
-  height:40px;
-  width:200px; 
-  font-size: medium;
-  margin:.5cm;
+.login-copy p {
+  line-height: 1.7;
 }
 
+.login-eyebrow {
+  margin: 0;
+  color: #a5f3fc;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
 
-.action_button{
-  cursor: pointer;
-  font-size: large;
-  color: rgb(97, 64, 128);
+.login-form {
+  display: grid;
+  align-content: center;
+  gap: 18px;
+  padding: 42px;
+}
+
+.login-form label {
+  display: grid;
+  gap: 7px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.login-form input {
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
   border-radius: 10px;
-  height:40px;
-  padding-left:.5cm;
-  padding-right: .5cm;
-  margin: .5cm;
+  font: inherit;
 }
 
-.submit:hover {
-  background-color: wheat;
+.login-form input:focus {
+  outline: 3px solid rgba(14, 116, 144, 0.16);
+  border-color: #0e7490;
 }
 
-.small_header{
-  font: 30px sans-serif;
-  color:azure;
-  margin: .5cm;
+.login-form button {
+  padding: 13px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: #0e7490;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
 }
 
-.username{
-  font: 30px sans-serif;
-  color:azure;
-  margin: .5cm;
-  justify-content: 'flex-end';
-  align-self:flex-end;
+.login-form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
-.login_panel {
-  display: flex;
-  flex-direction: column;
-  margin:auto;
-  margin: 0 auto;
-  width: 50%; 
-  padding: 20px;
-  flex: 1;
-  justify-content:center;
-  align-items: center;
-  vertical-align: middle;
-  
+.login-message {
+  padding: 11px 13px;
+  border-radius: 9px;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.login-switch {
+  margin: 0;
+  text-align: center;
+  color: #64748b;
+}
+
+.login-switch a {
+  color: #0e7490;
+  font-weight: 800;
+}
+
+@media (max-width: 720px) {
+  .login-card {
+    grid-template-columns: 1fr;
+  }
+
+  .login-copy,
+  .login-form {
+    padding: 30px 24px;
+  }
 }
