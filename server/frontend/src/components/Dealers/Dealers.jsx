@@ -92,7 +92,7 @@ const Dealers = () => {
                   <th>Address</th>
                   <th>ZIP</th>
                   <th>State</th>
-                  {isLoggedIn && <th aria-label="Post a review">Review</th>}
+                  {isLoggedIn && <th>Review Dealer</th>}
                 </tr>
               </thead>
               <tbody>
@@ -116,6 +116,7 @@ const Dealers = () => {
                           aria-label={`Review ${dealer.full_name}`}
                         >
                           <img src={reviewIcon} alt="" />
+                          <span>Review Dealer</span>
                         </a>
                       </td>
                     )}
