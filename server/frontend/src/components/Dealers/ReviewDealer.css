@@ -1,0 +1,19 @@
+.review-link {
+  display: inline-flex;
+  width: auto;
+  min-width: 138px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  color: #0e7490;
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.review-link img {
+  flex: 0 0 auto;
+}
