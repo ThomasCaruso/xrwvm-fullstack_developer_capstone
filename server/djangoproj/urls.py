@@ -18,6 +18,11 @@ urlpatterns = [
     ),
     path("dealers/", TemplateView.as_view(template_name="index.html"), name="dealers"),
     path(
+        "dealers/<str:state>/",
+        TemplateView.as_view(template_name="index.html"),
+        name="dealers_by_state",
+    ),
+    path(
         "dealer/<int:dealer_id>/",
         TemplateView.as_view(template_name="index.html"),
         name="dealer",
