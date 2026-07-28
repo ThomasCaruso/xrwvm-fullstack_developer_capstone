@@ -4,6 +4,7 @@ import Header from "../Header/Header";
 import reviewIcon from "../assets/reviewicon.png";
 import "../assets/style.css";
 import "./Dealers.css";
+import "./ReviewDealer.css";
 
 const Dealers = () => {
   const [dealers, setDealers] = useState([]);
