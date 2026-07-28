@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 
 import Header from "../Header/Header";
 import reviewIcon from "../assets/reviewicon.png";
@@ -7,9 +8,12 @@ import "./Dealers.css";
 import "./ReviewDealer.css";
 
 const Dealers = () => {
+  const { state: routeState } = useParams();
+  const initialState = routeState || "All";
+
   const [dealers, setDealers] = useState([]);
   const [allStates, setAllStates] = useState([]);
-  const [selectedState, setSelectedState] = useState("All");
+  const [selectedState, setSelectedState] = useState(initialState);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -24,7 +28,12 @@ const Dealers = () => {
       : `/djangoapp/get_dealers/${encodeURIComponent(state)}`;
 
     try {
-      const response = await fetch(endpoint);
+      const requests = [fetch(endpoint)];
+      if (state !== "All") {
+        requests.push(fetch("/djangoapp/get_dealers"));
+      }
+
+      const [response, allResponse] = await Promise.all(requests);
       const result = await response.json();
 
       if (!response.ok || result.status !== 200) {
@@ -34,11 +43,17 @@ const Dealers = () => {
       const dealerList = Array.isArray(result.dealers) ? result.dealers : [];
       setDealers(dealerList);
 
-      if (state === "All") {
-        setAllStates(
-          [...new Set(dealerList.map((dealer) => dealer.state))].sort(),
-        );
+      let stateSource = dealerList;
+      if (allResponse) {
+        const allResult = await allResponse.json();
+        if (allResponse.ok && allResult.status === 200 && Array.isArray(allResult.dealers)) {
+          stateSource = allResult.dealers;
+        }
       }
+
+      setAllStates(
+        [...new Set(stateSource.map((dealer) => dealer.state))].sort(),
+      );
     } catch (requestError) {
       setDealers([]);
       setError(requestError.message || "Unable to load dealerships.");
@@ -48,13 +63,17 @@ const Dealers = () => {
   }, []);
 
   useEffect(() => {
-    loadDealers();
-  }, [loadDealers]);
+    const state = routeState || "All";
+    setSelectedState(state);
+    loadDealers(state);
+  }, [loadDealers, routeState]);
 
   const changeState = (event) => {
     const state = event.target.value;
-    setSelectedState(state);
-    loadDealers(state);
+    const path = state === "All"
+      ? "/dealers/"
+      : `/dealers/${encodeURIComponent(state)}/`;
+    window.location.assign(path);
   };
 
   return (
